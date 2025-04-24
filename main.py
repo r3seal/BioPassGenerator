@@ -1,6 +1,7 @@
 import random
 from Bio.Seq import Seq
 
+
 # Paramtery stałe
 POPULATION_SIZE = 10
 DNA_LENGTH = 64  # 64 nukleotydy = 128 bitów = 16 znaków ASCII
@@ -105,7 +106,8 @@ def crossover_population(population):
                 for a, b in zip(p1, p2):
                     if random.random() < 0.5:
                         child1 += a
-                        child2 += b
+                        child2 +=\
+                            b
                     else:
                         child1 += b
                         child2 += a
@@ -157,6 +159,55 @@ def genetic_algorithm():
         population = selection(population, fitnesses)
 
     return generate_password_from_dna(best)
+
+global history
+def generate_password_with_details():
+    population = init_population()
+    best = ''
+    best_fitness = 0
+    no_improvement = 0
+    history = ""
+
+    generation = 0
+
+    while no_improvement < STOP_LIMIT:
+        generation += 1
+        history += f"\n📈 Generation {generation}:\n"
+
+        history += "🔄 Population before mutation:\n"
+        history += "\n".join(population) + "\n\n"
+
+        population = mutate_population(population)
+        history += "🔁 Population after mutation:\n"
+        history += "\n".join(population) + "\n\n"
+
+        population = crossover_population(population)
+        history += "🔀 Population after crossover:\n"
+        history += "\n".join(population) + "\n\n"
+
+        fitnesses = [fitness(dna) for dna in population]
+
+        current_best = max(fitnesses)
+        if current_best > best_fitness:
+            best_fitness = current_best
+            best = population[fitnesses.index(current_best)]
+            no_improvement = 0
+        else:
+            no_improvement += 1
+
+        # Perform selection
+        population = selection(population, fitnesses)
+
+    original_dna = best
+    mutated_dna = normalize_sequence(best)
+    password = dna_to_ascii(mutated_dna)
+    #Dziękujemy chatu za symboli
+    history += "🔬 Oryginalna sekwencja DNA:\n" + original_dna + "\n\n"
+    history += "🧬 Znormalizowana / zmodyfikowana sekwencja DNA:\n" + mutated_dna + "\n\n"
+    history += "🔐 Wygenerowane hasło:\n" + password
+
+    return password, history
+
 
 # URUCHOMIENIE
 if __name__ == "__main__":
