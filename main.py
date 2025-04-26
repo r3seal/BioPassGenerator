@@ -1,15 +1,13 @@
 import random
 from Bio.Seq import Seq
 
-
-# Paramtery stałe
+# Stałe
 POPULATION_SIZE = 10
-DNA_LENGTH = 64  # 64 nukleotydy = 128 bitów = 16 znaków ASCII
 STOP_LIMIT = 200
 MUTATIONS_PER_INDIVIDUAL = 5
 
 # Generowanie startowej sekwencji DNA
-def generate_dna_sequence(length=64):
+def generate_dna_sequence(length):
     return str(Seq("".join(random.choices("ATCG", k=length))))
 
 # Funkcje mutacji
@@ -58,40 +56,44 @@ def mutate_sequence(seq, mutation_count=MUTATIONS_PER_INDIVIDUAL):
         seq = mutation(seq)
     return seq
 
-# Zapewnienie poprawnej długości hasła
-def normalize_sequence(seq, length=DNA_LENGTH):
-    if len(seq) > length:
-        return seq[:length]
-    elif len(seq) < length:
-        return seq + ''.join(random.choices("ATCG", k=length - len(seq)))
+# Zapewnienie poprawnej długości sekwencji DNA
+def normalize_sequence(seq, dna_length):
+    if len(seq) > dna_length:
+        return seq[:dna_length]
+    elif len(seq) < dna_length:
+        return seq + ''.join(random.choices("ATCG", k=dna_length - len(seq)))
     return seq
 
 # Konwersja ciągu DNA do ASCII
-def dna_to_ascii(seq):
+def dna_to_ascii(seq, desired_length):
     mapping = {'A': '00', 'C': '01', 'T': '10', 'G': '11'}
     binary_str = ''.join(mapping[nt] for nt in seq if nt in mapping)
-    binary_str = binary_str[:128].ljust(128, '0')
+
+    total_bits = desired_length*2
+    #print(desired_length)
+    binary_str = binary_str[:total_bits].ljust(total_bits, '0')
 
     ascii_chars = []
-    for i in range(0, 128, 8):
+    for i in range(0, total_bits, 8):
         byte = binary_str[i:i+8]
         value = int(byte, 2)
-        value = 33 + (value % 94)  # zakres cztelnych znaków ASCII 33–126
+        value = 33 + (value % 94)
         ascii_chars.append(chr(value))
+
     return ''.join(ascii_chars)
 
-# Funkcja hasła
-def fitness(dna):
-    ascii_pass = dna_to_ascii(dna)
+# Funkcja oceny hasła
+def fitness(dna, desired_length):
+    ascii_pass = dna_to_ascii(dna, desired_length)
     if not ascii_pass:
         return 0
     unique_chars = len(set(ascii_pass))
-    valid = all(33 <= ord(c) <= 126 for c in ascii_pass) # czy wszystkie znaki są czytelne
-    return unique_chars + (10 if valid else 0) # punktacja/ocena hasła
+    valid = all(33 <= ord(c) <= 126 for c in ascii_pass)
+    return unique_chars + (10 if valid else 0)
 
-# FUNKCJE ALGORYTMU GA
-def init_population():
-    return [generate_dna_sequence() for _ in range(POPULATION_SIZE)]
+# GA Functions
+def init_population(dna_length):
+    return [generate_dna_sequence(dna_length) for _ in range(POPULATION_SIZE)]
 
 def mutate_population(population):
     return [mutate_sequence(ind) for ind in population]
@@ -106,8 +108,7 @@ def crossover_population(population):
                 for a, b in zip(p1, p2):
                     if random.random() < 0.5:
                         child1 += a
-                        child2 +=\
-                            b
+                        child2 += b
                     else:
                         child1 += b
                         child2 += a
@@ -133,12 +134,14 @@ def selection(population, fitnesses):
                 break
     return new_population
 
-def generate_password_from_dna(dna):
-    dna = normalize_sequence(dna)
-    return dna_to_ascii(dna)
+def generate_password_from_dna(dna, desired_length):
+    dna_length = desired_length * 4
+    dna = normalize_sequence(dna, dna_length)
+    return dna_to_ascii(dna, desired_length)
 
-def genetic_algorithm():
-    population = init_population()
+def genetic_algorithm(desired_length):
+    dna_length = desired_length * 4
+    population = init_population(dna_length)
     best = ''
     best_fitness = 0
     no_improvement = 0
@@ -146,7 +149,7 @@ def genetic_algorithm():
     while no_improvement < STOP_LIMIT:
         population = mutate_population(population)
         population = crossover_population(population)
-        fitnesses = [fitness(dna) for dna in population]
+        fitnesses = [fitness(dna, dna_length) for dna in population]
 
         current_best = max(fitnesses)
         if current_best > best_fitness:
@@ -158,22 +161,24 @@ def genetic_algorithm():
 
         population = selection(population, fitnesses)
 
-    return generate_password_from_dna(best)
+    return generate_password_from_dna(best, dna_length)
 
-global history
-def generate_password_with_details():
-    population = init_population()
+# Globalna historia
+history = ""
+
+def generate_password_with_details(desired_length):
+    global history
+    dna_length = desired_length
+    population = init_population(dna_length)
     best = ''
     best_fitness = 0
     no_improvement = 0
     history = ""
-
     generation = 0
 
     while no_improvement < STOP_LIMIT:
         generation += 1
         history += f"\n📈 Generation {generation}:\n"
-
         history += "🔄 Population before mutation:\n"
         history += "\n".join(population) + "\n\n"
 
@@ -185,7 +190,7 @@ def generate_password_with_details():
         history += "🔀 Population after crossover:\n"
         history += "\n".join(population) + "\n\n"
 
-        fitnesses = [fitness(dna) for dna in population]
+        fitnesses = [fitness(dna, desired_length) for dna in population]
 
         current_best = max(fitnesses)
         if current_best > best_fitness:
@@ -195,21 +200,21 @@ def generate_password_with_details():
         else:
             no_improvement += 1
 
-        # Perform selection
         population = selection(population, fitnesses)
 
     original_dna = best
-    mutated_dna = normalize_sequence(best)
-    password = dna_to_ascii(mutated_dna)
-    #Dziękujemy chatu za symboli
+    mutated_dna = normalize_sequence(best, dna_length)
+    password = dna_to_ascii(mutated_dna, desired_length)
+    print(password)
+
     history += "🔬 Oryginalna sekwencja DNA:\n" + original_dna + "\n\n"
     history += "🧬 Znormalizowana / zmodyfikowana sekwencja DNA:\n" + mutated_dna + "\n\n"
     history += "🔐 Wygenerowane hasło:\n" + password
 
     return password, history
 
-
 # URUCHOMIENIE
 if __name__ == "__main__":
-    password = genetic_algorithm()
+    desired_length = 16
+    password = genetic_algorithm(desired_length)
     print("Wygenerowane hasło:", password)
