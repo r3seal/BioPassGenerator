@@ -1,5 +1,6 @@
 import random
 from Bio.Seq import Seq
+import string
 
 # Stałe
 POPULATION_SIZE = 10
@@ -87,9 +88,63 @@ def fitness(dna, desired_length):
     ascii_pass = dna_to_ascii(dna, desired_length)
     if not ascii_pass:
         return 0
-    unique_chars = len(set(ascii_pass))
-    valid = all(33 <= ord(c) <= 126 for c in ascii_pass)
-    return unique_chars + (10 if valid else 0)
+    return (fitness_unique_chars(ascii_pass) +
+            fitness_valid(ascii_pass) +
+            2 * fitness_types(ascii_pass) +
+            fitness_series(ascii_pass))
+
+# Funkcje oceny haseł
+def fitness_unique_chars(password):
+    return len(set(password))
+
+def fitness_valid(password):
+    valid = all(33 <= ord(c) <= 126 for c in password)
+    return (10 if valid else 0)
+
+def fitness_types(password):
+    has_digit = any(c.isdigit() for c in password)
+    has_lower = any(c.islower() for c in password)
+    has_upper = any(c.isupper() for c in password)
+    has_special = any(c in string.punctuation for c in password)
+
+    strength = sum([has_digit, has_lower, has_upper, has_special])
+
+    return strength
+
+def fitness_series(passwd):
+    pass_len = len(passwd)
+    preferred_series_count = 5
+    pref_series_len = pass_len / preferred_series_count
+
+    series = []
+    current_series = passwd[0]
+
+    for char in passwd[1:]:
+        if char.isalpha() == current_series[-1].isalpha() and char.isdigit() == current_series[-1].isdigit():
+            current_series += char
+        else:
+            series.append(current_series)
+            current_series = char
+    series.append(current_series)
+
+    sum_err = sum(abs(len(s) - pref_series_len) for s in series)
+
+    strength = pass_len ** 2 - sum_err
+    if strength < 0:
+        strength = 0
+
+    return strength/10
+
+
+def fitness_types(password):
+    has_digit = any(c.isdigit() for c in password)
+    has_lower = any(c.islower() for c in password)
+    has_upper = any(c.isupper() for c in password)
+    has_special = any(c in string.punctuation for c in password)
+
+    strength = sum([has_digit, has_lower, has_upper, has_special])
+
+    return strength
 
 # GA Functions
 def init_population(dna_length):
