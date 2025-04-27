@@ -135,17 +135,6 @@ def fitness_series(passwd):
 
     return strength/10
 
-
-def fitness_types(password):
-    has_digit = any(c.isdigit() for c in password)
-    has_lower = any(c.islower() for c in password)
-    has_upper = any(c.isupper() for c in password)
-    has_special = any(c in string.punctuation for c in password)
-
-    strength = sum([has_digit, has_lower, has_upper, has_special])
-
-    return strength
-
 # GA Functions
 def init_population(dna_length):
     return [generate_dna_sequence(dna_length) for _ in range(POPULATION_SIZE)]
