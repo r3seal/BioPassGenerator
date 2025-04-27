@@ -222,16 +222,16 @@ def generate_password_with_details(desired_length):
 
     while no_improvement < STOP_LIMIT:
         generation += 1
-        history += f"\n📈 Generation {generation}:\n"
-        history += "🔄 Population before mutation:\n"
+        history += f"\nGeneration {generation}:\n"
+        history += "Population before mutation:\n"
         history += "\n".join(population) + "\n\n"
 
         population = mutate_population(population)
-        history += "🔁 Population after mutation:\n"
+        history += "Population after mutation:\n"
         history += "\n".join(population) + "\n\n"
 
         population = crossover_population(population)
-        history += "🔀 Population after crossover:\n"
+        history += "Population after crossover:\n"
         history += "\n".join(population) + "\n\n"
 
         fitnesses = [fitness(dna, desired_length) for dna in population]
@@ -251,9 +251,9 @@ def generate_password_with_details(desired_length):
     password = dna_to_ascii(mutated_dna, desired_length)
     print(password)
 
-    history += "🔬 Oryginalna sekwencja DNA:\n" + original_dna + "\n\n"
-    history += "🧬 Znormalizowana / zmodyfikowana sekwencja DNA:\n" + mutated_dna + "\n\n"
-    history += "🔐 Wygenerowane hasło:\n" + password
+    history += "Oryginalna sekwencja DNA:\n" + original_dna + "\n\n"
+    history += "Znormalizowana / zmodyfikowana sekwencja DNA:\n" + mutated_dna + "\n\n"
+    history += "Wygenerowane hasło:\n" + password
 
     return password, history
 
